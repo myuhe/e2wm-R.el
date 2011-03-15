@@ -1,0 +1,783 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;require
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require 'cl)
+(require'ess-site)
+(require 'e2wm)
+(require 'inlineR)
+(load "ess-rdired")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;perspective definition : R-code / R Code editing 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar e2wm:c-R-code-recipe
+  '(| (:left-max-size 35)
+      (- (:upper-size-ratio 0.3)
+         R-graphics-list
+         (- (:upper-size-ratio 0.5)
+            R-graphics
+            history))
+      (- (:upper-size-ratio 0.7)
+         (| (:right-max-size 25)
+            (- (:upper-size-ratio 0.7)
+               main
+               proc)
+            (- (:upper-size-ratio 0.3)
+               R-dired
+               imenu))
+         sub)))
+
+
+;; (defvar e2wm:c-R-code-recipe
+;;   '(| (:left-max-size 25)
+;;       (- (:upper-size-ratio 0.5)
+;;          imenu
+;;          history)
+;;       (- (:upper-size-ratio 0.7)
+;;          (| (:right-max-size 35)
+;;             (- (:upper-size-ratio 0.7)
+;;                main proc)
+;;             (- (:upper-size-ratio 0.3)
+;;                R-dired
+;;                (- (:lower-max-size 35)
+;;                 R-graphics-list R-graphics)))
+;;          sub)))
+
+(defvar e2wm:c-R-code-winfo
+  '((:name main)
+    (:name R-dired :plugin R-dired)
+    (:name R-graphics :plugin R-graphics)
+    (:name R-graphics-list :plugin R-graphics-list)
+    ;;(:name proc :plugin files)
+    (:name proc :plugin R-open  :plugin-args (:command R :buffer "*R*"))
+    (:name history :plugin history-list)
+    (:name sub :buffer "*info*" :default-hide t)
+    (:name imenu :plugin imenu :default-hide nil)))
+
+(e2wm:pst-class-register 
+ (make-e2wm:$pst-class
+  :name   'R-code
+  :title  "R-Coding"
+  :init   'e2wm:dp-R-code-init
+  :main   'main
+  :switch 'e2wm:dp-code-switch
+  :popup  'e2wm:dp-R-code-popup
+  :keymap 'e2wm:dp-R-code-minor-mode-map))
+
+(defun e2wm:dp-R-code-init ()
+  (let* 
+      ((code-wm 
+        (wlf:no-layout 
+         e2wm:c-R-code-recipe
+         e2wm:c-R-code-winfo))
+       (buf (or prev-selected-buffer
+                (e2wm:history-get-main-buffer))))
+    (when (e2wm:history-recordable-p prev-selected-buffer)
+      (e2wm:history-add prev-selected-buffer))
+    (wlf:set-buffer code-wm 'main buf)
+    code-wm))
+
+(defvar e2wm:dp-R-code-minor-mode-map 
+  (e2wm:define-keymap
+   '(("prefix h" . e2wm:dp-code-navi-history-command)
+     ("prefix i" . e2wm:dp-code-navi-imenu-command)
+     ("prefix l" . e2wm:dp-R-navi-grlist-command)
+     ("prefix d" . e2wm:dp-R-navi-dired-command) 
+     ("prefix s" . e2wm:dp-code-sub-toggle-command)
+     ("prefix c" . e2wm:dp-code-toggle-clock-command)
+     ("prefix g" . e2wm:def-plugin-R-graphics-timestamp-draw)
+     ("prefix G" . e2wm:def-plugin-R-graphics-draw)
+     ("prefix m" . e2wm:dp-code-main-maximize-toggle-command))
+   e2wm:prefix-key))
+
+;;; commands / R-code
+;;;--------------------------------------------------
+
+
+(defun e2wm:dp-R-code ()
+  (interactive)
+  (e2wm:pst-change 'R-code))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;perspective definition : R-view / R graphics view
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar e2wm:c-R-view-recipe
+  '(| (:left-size-ratio 0.6)
+      (- (:upper-size-ratio 0.5)
+         main 
+         (- (:upper-size-ratio 0.5)
+            proc
+            sub))
+      (- (:upper-size-ratio 0.4)
+         (| (:left-size-ratio 0.5)
+            R-dired
+            (- (:upper-size-ratio 0.7)
+               R-graphics-list
+               history))
+         R-graphics)))
+
+(defvar e2wm:c-R-view-winfo
+  '((:name main)
+    (:name R-dired :plugin R-dired)
+    (:name R-graphics :plugin R-graphics)
+    ;; (:name files :plugin files)
+    (:name R-graphics-list :plugin R-graphics-list)
+    (:name proc :plugin R-open  :plugin-args (:command R :buffer "*R*"))
+    (:name history :plugin history-list)
+    (:name sub :buffer "*info*" :default-hide t)))
+
+(e2wm:pst-class-register
+ (make-e2wm:$pst-class
+  :name   'R-view
+  :title  "R-graphics-view"
+  :init   'e2wm:dp-R-view-init
+  :main   'main
+  :switch 'e2wm:dp-code-switch
+  :popup  'e2wm:dp-R-code-popup
+  :keymap 'e2wm:dp-R-view-minor-mode-map))
+
+(defun e2wm:dp-R-view-init ()
+  (let* 
+      ((code-wm 
+        (wlf:no-layout 
+         e2wm:c-R-view-recipe
+         e2wm:c-R-view-winfo))
+       (buf (or prev-selected-buffer
+                (e2wm:history-get-main-buffer))))
+    (when (e2wm:history-recordable-p prev-selected-buffer)
+      (e2wm:history-add prev-selected-buffer))
+    (wlf:set-buffer code-wm 'main buf)
+    code-wm))
+
+(defvar e2wm:dp-R-view-minor-mode-map 
+  (e2wm:define-keymap
+   '(("prefix h" . e2wm:dp-code-navi-history-command)
+     ("prefix l" . e2wm:dp-R-navi-grlist-command)
+     ("prefix d" . e2wm:dp-R-navi-dired-command)
+     ("prefix s" . e2wm:dp-code-sub-toggle-command)
+     ("prefix c" . e2wm:dp-code-toggle-clock-command)
+     ("prefix g" . e2wm:def-plugin-R-graphics-timestamp-draw)
+     ("prefix G" . e2wm:def-plugin-R-graphics-draw)
+     ("prefix m" . e2wm:dp-code-main-maximize-toggle-command))
+   e2wm:prefix-key))
+
+
+(defun e2wm:dp-R-view ()
+  (interactive)
+  (e2wm:pst-change 'R-view))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;perspective definition : Common Commands
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun e2wm:start-R-code ()
+  "English:
+start window management with R code
+Japanese:
+e2wmをRで開始する。"
+  (interactive)
+  (cond
+   (e2wm:pst-minor-mode
+    (message "E2wm has already started."))
+   (t
+    (run-hooks 'e2wm:pre-start-hook)
+    (e2wm:frame-param-set 
+     'e2wm-save-window-configuration 
+     (current-window-configuration))
+    (e2wm:history-add-loaded-buffers) ; 全部つっこむ
+    (e2wm:history-save-backup nil)
+    (e2wm:pst-minor-mode 1)
+    (ad-activate-regexp "^e2wm:ad-debug" t) ; debug
+    (e2wm:pstset-defaults) ; 全部使う
+    (e2wm:pst-set-prev-pst nil)
+    (e2wm:pst-change 'R-code) 
+    (e2wm:menu-define)
+
+    (run-hooks 'e2wm:post-start-hook))))
+
+(defun e2wm:dp-R-code-popup (buf)
+  ;;とりあえず全部subで表示してみる
+  (let ((cb (current-buffer)))
+    (e2wm:message "#DP CODE popup : %s (current %s / backup %s)" 
+                 buf cb e2wm:override-window-cfg-backup))
+  (let ((buf-name (buffer-name buf))
+        (wm (e2wm:pst-get-wm)))
+    (cond
+     ((e2wm:history-recordable-p buf)
+      (e2wm:pst-show-history-main)
+      ;;記録対象なら履歴に残るのでupdateで表示を更新させる
+      t)
+     ((and e2wm:override-window-cfg-backup
+       (eq (selected-window) (wlf:get-window wm 'sub)))
+      ;;現在subならmainに表示しようとする
+      ;;minibuffer以外の補完バッファは動きが特殊なのでbackupをnilにする
+      (setq e2wm:override-window-cfg-backup nil)
+      ;;一時的に表示するためにset-window-bufferを使う
+      ;;(prefix) C-lなどで元のバッファに戻すため
+      (set-window-buffer (wlf:get-window wm 'main) buf)
+      t)
+     (
+      (string= "*R*" buf-name)
+      (wlf:set-buffer (e2wm:pst-get-wm) 'proc buf)
+      ;;(e2wm:pst-buffer-set 'main buf t)
+      t)
+     ((and e2wm:c-code-show-main-regexp
+           (string-match e2wm:c-code-show-main-regexp buf-name))
+      (e2wm:pst-buffer-set 'main buf t)
+      t)
+     (t
+      (e2wm:dp-code-popup-sub buf)
+      t))))
+
+
+(defun e2wm:dp-R-navi-dired-command ()
+  (interactive)
+  (wlf:select (e2wm:pst-get-wm) 'R-dired))
+
+(defun e2wm:dp-R-navi-graphics-command ()
+  (interactive)
+  (wlf:select (e2wm:pst-get-wm) 'R-graphics))
+
+(defun e2wm:dp-R-navi-grlist-command ()
+  (interactive)
+  (wlf:select (e2wm:pst-get-wm) 'R-graphics-list))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;plugin definition / R-dired plugin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar e2wm:rdired-buffer " *WM:Rdired*"
+  "Name of buffer for displaying R objects.")
+(defvar e2wm:def-plugin-R-dired-timer-handle nil "timer object")
+(defvar e2wm:rdired-tmp-buffer " *tmp-Rdired*"
+  "Name of buffer for temporal R objects.")
+
+(e2wm:plugin-register 'R-dired
+                      "R-Dired"
+                      'e2wm:def-plugin-R-dired)
+
+(defun e2wm:def-plugin-R-dired (frame wm winfo)
+  (let ((buf (get-buffer-create e2wm:rdired-buffer))
+        (get-buffer-create e2wm:rdired-tmp-buffer))
+    (with-current-buffer buf
+      (unwind-protect
+          (progn
+            ;;(e2wm:def-plugin-R-revert)
+            (setq buffer-read-only nil)
+            (e2wm:def-plugin-R-dired-mode)
+            (setq header-line-format "R dired"))
+        (setq mode-line-format 
+              '("-" mode-line-mule-info
+                " " mode-line-position "-%-"))
+        (setq buffer-read-only t)))
+    (wlf:set-buffer wm (wlf:window-name winfo) buf))
+  (setq e2wm:def-plugin-R-dired-timer-handle
+        (run-at-time 5 5 'e2wm:def-plugin-R-dired-timer)))
+
+(defun e2wm:def-plugin-R-dired-timer ()
+  ;;bufferが死んでいれば、タイマー停止
+  ;;bufferが生きていれば更新実行
+  (let ((buf (get-buffer e2wm:rdired-buffer)))
+    (if (and (e2wm:managed-p) buf (buffer-live-p buf) 
+             (get-buffer-window buf))
+        (when (= 0 (minibuffer-depth))
+          (e2wm:def-plugin-R-timer-revert))
+      (when e2wm:def-plugin-R-dired-timer-handle
+        (cancel-timer e2wm:def-plugin-R-dired-timer-handle)
+        (setq e2wm:def-plugin-R-dired-timer-handle nil)
+        (when buf (kill-buffer buf))
+        (e2wm:message "WM: 'R-dired' update timer stopped.")))))
+
+(defun e2wm:def-plugin-R-dired-mode ()
+  (kill-all-local-variables)
+  (make-local-variable 'revert-buffer-function)
+  (setq revert-buffer-function 'e2wm:def-plugin-R-revert-buffer)
+  (use-local-map e2wm:def-plugin-R-dired-mode-map)
+  (setq major-mode 'e2wm:def-plugin-R-dired-mode)
+  (setq mode-name (concat "RDired " ess-local-process-name)))
+
+(defvar e2wm:def-plugin-R-dired-mode-map
+  (e2wm:define-keymap 
+   '(("d"           . ess-rdired-delete)
+     ("u"           . ess-rdired-undelete)
+     ("x"           . ess-rdired-expunge)
+     ("v"           . e2wm:def-plugin-R-dired-view)
+     ("P"           . ess-rdired-plot)
+     ("s"           . ess-rdired-sort)
+     ("y"           . ess-rdired-type)
+     ("j"           . ess-rdired-next-line)
+     ("k"           . ess-rdired-previous-line)
+     ("n"           . ess-rdired-next-line)
+     ("p"           . ess-rdired-previous-line)  
+     ("C-n"         . ess-rdired-next-line)
+     ("C-p"         . ess-rdired-previous-line)    
+     ("g"           . revert-buffer)
+     ("q"           . e2wm:pst-window-select-main-command))))
+
+(defun e2wm:def-plugin-R-dired-view ()
+  "View the object at point."
+  (interactive)
+  (let ((objname (ess-rdired-object)))
+    (ess-execute (ess-rdired-get objname)
+                 nil "R view" )
+    (e2wm:pst-window-select 'R-dired)))
+
+(defun e2wm:def-plugin-R-timer-revert ()
+  (let ((buf (get-buffer-create e2wm:rdired-buffer))
+        (tmpbuf (get-buffer-create e2wm:rdired-tmp-buffer)))
+    (when (or (string= mode-name "ESS[S]")
+              (string= (buffer-name (current-buffer)) "*R*"))
+      (e2wm:def-plugin-R-revert)
+      (kill-buffer e2wm:rdired-buffer)
+      (set-buffer tmpbuf)
+      (rename-buffer e2wm:rdired-buffer)
+      (wlf:set-buffer (e2wm:pst-get-wm) 'R-dired (current-buffer)))))
+
+(defun e2wm:def-plugin-R-revert-buffer (ignore noconfirm)
+  "Update the buffer list (in case object list has changed).
+Arguments IGNORE and NOCONFIRM currently not used."
+  (e2wm:def-plugin-R-revert))
+
+(defun e2wm:def-plugin-R-revert()
+  (interactive)
+  (let ((buf (get-buffer-create e2wm:rdired-tmp-buffer)))
+    (with-current-buffer buf
+      (setq buffer-read-only nil)
+      (e2wm:def-plugin-R-dired-mode)
+      (setq header-line-format "R dired")
+      (setq mode-line-format 
+            '("-" mode-line-mule-info
+              " " mode-line-position "-%-"))
+      (e2wm:def-plugin-R-execute ess-rdired-objects)
+      (delete-char (* (1- (length (split-string ess-rdired-objects "\n"))) 2))
+      (setq ess-rdired-sort-num 1)
+      (ess-rdired-insert-set-properties 
+       (save-excursion
+         (goto-char (point-min))
+         (forward-line 1)
+         (point))
+       (point-max))
+      (setq buffer-read-only t))))
+
+(defun e2wm:def-plugin-R-execute (command)
+  (ess-make-buffer-current)
+  (let ((the-command (concat command "\n"))
+        (buff-name e2wm:rdired-tmp-buffer))
+    (let ((buff (ess-create-temp-buffer buff-name)))
+      (save-excursion
+        (set-buffer buff)
+        (ess-command the-command (get-buffer buff-name))
+        (goto-char (point-min))
+        (setq ess-local-process-name ess-current-process-name)))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;plugin definition / R-graphics plugin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar e2wm:def-plugin-R-graphics-dir ".Rgraphics/")
+(defvar e2wm:def-plugin-R-graphics-thumnail-dir ".Rthumnail/")
+(defvar e2wm:def-plugin-R-graphics-dir-ok nil)
+
+(defun e2wm:def-plugin-R-graphics-fix-directory (dir-arg)
+  ;;バッファのカレントディレクトリに保存先ディレクトリを作る
+  ;;一応作って良いかどうか聞く
+  (let* ((img-dir dir-arg)
+         (main-dir 
+          (file-name-directory 
+           (buffer-file-name 
+            (wlf:get-buffer (e2wm:pst-get-wm) 'main))))
+         (dir (concat main-dir img-dir)))
+    (unless (file-directory-p dir)
+      (when (or e2wm:def-plugin-R-graphics-dir-ok 
+                (y-or-n-p 
+                 (format "Image directory [%s] not found. Create it ?" 
+                         dir)))
+        (make-directory dir))
+      (unless (file-directory-p dir)
+        (error "Could not create a image directory.")))
+    dir))
+
+(defvar e2wm:R-graphics-buffer " *WM:R-graphics*"
+  "Name of buffer for displaying R graphics.")
+
+(e2wm:plugin-register 'R-graphics
+                      "R-graphics"
+                      'e2wm:def-plugin-R-graphics)
+
+(defun e2wm:def-plugin-R-graphics (frame wm winfo)
+  (let ((buf (get-buffer-create e2wm:R-graphics-buffer)))
+    (with-current-buffer buf
+      (unwind-protect
+          (progn
+            (setq buffer-read-only nil)
+            (setq mode-line-format 
+                  '("-" mode-line-mule-info
+                    " " mode-line-position "-%-"))  
+            ;;(erase-buffer)
+            ;;(insert "\n\n\n\n\n\n          no image")
+            (setq header-line-format "R graphics"))
+        (setq buffer-read-only t)))
+    (wlf:set-buffer wm (wlf:window-name winfo) buf)))
+
+(defun e2wm:def-plugin-R-graphics-draw ()
+  (interactive)
+  (let* ((start (inlineR-get-start))
+         (end (inlineR-get-end))
+         (fun (buffer-substring start end))
+         (format "png")
+         (filename (read-string "filename: " nil))
+         (file (concat 
+                (e2wm:def-plugin-R-graphics-fix-directory
+                 e2wm:def-plugin-R-graphics-dir)
+                filename "." format)))
+    (e2wm:def-plugin-R-graphics-execute file format fun)
+    (e2wm:def-plugin-R-graphics-polling file filename format)
+    ;; (e2wm:def-plugin-R-graphics-img-fit file filename format t)
+    ))
+
+(defun e2wm:def-plugin-R-graphics-timestamp-draw ()
+  (interactive)
+  (let* ((start (inlineR-get-start))
+         (end (inlineR-get-end))
+         (fun (buffer-substring start end))
+         (format "png")
+         (filename (format-time-string "%y%m%d-%H-%M-%S"))
+         (file (concat 
+                (e2wm:def-plugin-R-graphics-fix-directory
+                 e2wm:def-plugin-R-graphics-dir)
+                filename "." format)))
+    (e2wm:def-plugin-R-graphics-execute file format fun)
+    (e2wm:def-plugin-R-graphics-polling file filename format)
+    ;; (e2wm:def-plugin-R-graphics-img-fit file filename format t)
+    ))
+
+(defun e2wm:def-plugin-R-graphics-execute (file format fun)
+  (if inlineR-cairo-p
+      (cond
+       ((string= format "svg")  
+        (ess-command 
+         (concat 
+          "CairoSVG(\"" file "\", 3, 3)\n"
+          fun "\n"
+          "dev.off()\n")))
+       (t (ess-command
+           (concat
+            "Cairo(600, 600, \"" file "\", type=\"" format "\", bg =\"white\" )\n"
+            fun "\n"
+            "dev.off()\n"))))
+    (ess-command
+     (concat
+      format "(\"" file "\")\n"
+      fun "\n"
+      "dev.off()\n"))))
+
+(lexical-let ((count 0))
+  (defun e2wm:def-plugin-R-graphics-polling (file filename format)
+    (if (image-type-from-file-header file)
+        (progn
+          (message "output image complete!!")
+          (setq count 0)
+          ;;(message "file type check complete!!")
+          (e2wm:def-plugin-R-graphics-img-fit file filename format t))
+      (progn
+        (setq count (1+ count))
+        (message (concat "output image." (make-string count ?.)))    
+        ;;(message "number %d" count)
+        (run-at-time
+         1 nil
+         'e2wm:def-plugin-R-graphics-polling file filename format)))))
+
+
+(defun e2wm:def-plugin-R-graphics-img-fit (file filename format &optional arg quiet)
+  "Japanese:
+ウィンドウの大きさに合わせて画像をリサイズする。
+引数 argがnonnilだと縦横の比率を保持しない。
+English:
+Resize image to current window size.
+With prefix arg don't preserve the aspect ratio."
+  (lexical-let ((base file)
+                (thumnail (concat 
+                           (e2wm:def-plugin-R-graphics-fix-directory
+                            e2wm:def-plugin-R-graphics-thumnail-dir)
+                           filename "." format))
+                (noverbose quiet))
+    (let* ((buf (get-buffer e2wm:R-graphics-buffer))
+           (edges  (window-inside-pixel-edges (wlf:get-window (e2wm:pst-get-wm) 'R-graphics)))
+           (width  (- (nth 2 edges) (nth 0 edges)))
+           (height (- (nth 3 edges) (nth 1 edges))))
+      (apply #'start-process "resize-image" nil "convert"
+             (list "-resize"
+                   (concat (format "%dx%d" width height)
+                           (and arg "!"))
+                   base thumnail))
+      (set-process-sentinel
+       (get-process "resize-image")
+       #'(lambda (process event)
+           (kill-buffer e2wm:R-graphics-buffer)
+           (with-current-buffer 
+               (find-file-noselect thumnail)
+             (rename-buffer e2wm:R-graphics-buffer)
+             (wlf:set-buffer (e2wm:pst-get-wm) 'R-graphics (current-buffer))
+             (setq mode-line-format 
+                   '("-" mode-line-mule-info
+                     " " mode-line-position "-%-"))  
+             (setq header-line-format "R graphics"))
+       (e2wm:pst-window-select 'main)
+       (unless noverbose
+         (message "Ok %s on %s %s"
+                  process
+                  (file-name-nondirectory
+                   thumnail)
+                  event)))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;plugin definition / R-graphics-list plugin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar e2wm:R-grlist-buffer " *WM:R-graphics-list*"
+  "Name of buffer for displaying R objects.")
+(defvar e2wm:def-plugin-R-grlist-timer-handle nil "[internal use]")
+
+(e2wm:plugin-register 'R-graphics-list
+                      "R-graphics-list"
+                      'e2wm:def-plugin-R-grlist)
+
+(defvar e2wm:def-plugin-R-grlist-mode-map
+  (e2wm:define-keymap 
+   '(("k" . ess-rdired-previous-line)
+     ("j" . ess-rdired-next-line)
+     ("p" . ess-rdired-previous-line)
+     ("n" . ess-rdired-next-line)
+     ("C-p" . ess-rdired-previous-line)
+     ("C-n" . ess-rdired-next-line)
+     ("d" . e2wm:def-plugin-R-grlist-delete)
+     ("u" . e2wm:def-plugin-R-grlist-undelete)
+     ("D" . e2wm:def-plugin-R-grlist-all-delete)
+     ("U" . e2wm:def-plugin-R-grlist-all-undelete)
+     ("v" . e2wm:def-plugin-R-grlist-view)
+     ("x" . e2wm:def-plugin-R-grlist-expunge)
+     ("q" . e2wm:pst-window-select-main-command)
+     ("g" . e2wm:def-plugin-R-grlist-update)
+     )))
+
+(define-derived-mode
+  e2wm:def-plugin-R-grlist-mode
+  fundamental-mode
+  "R graphics list")
+
+(defun e2wm:def-plugin-R-grlist (frame wm winfo)
+  ;;bufferが生きていればバッファを表示するだけ（タイマーに任せる）
+  ;;bufferが無ければ初回更新してタイマー開始する
+  (let ((buf (get-buffer-create e2wm:R-grlist-buffer)))
+    ;; (unless (and buf (buffer-live-p buf))
+    ;;   (setq buf (e2wm:def-plugin-top-update)))
+    (with-current-buffer buf
+      (unwind-protect
+          (progn
+            (setq buffer-read-only nil)
+            (e2wm:def-plugin-R-grlist-mode)
+            (setq header-line-format "R graphics list")
+            (setq mode-line-format 
+                  '("-" mode-line-mule-info
+                    " " mode-line-position "-%-")))))
+    (unless e2wm:def-plugin-R-grlist-timer-handle
+      (setq e2wm:def-plugin-R-grlist-timer-handle
+            (run-at-time
+             6
+             6
+             'e2wm:def-plugin-R-grlist-timer))
+      )
+    (wlf:set-buffer wm (wlf:window-name winfo) buf)
+    ))
+
+
+(defun e2wm:def-plugin-R-grlist-timer ()
+  ;;bufferが死んでいれば、タイマー停止
+  ;;bufferが生きていれば更新実行
+  (let ((buf (get-buffer e2wm:R-grlist-buffer)))
+    (if (and (e2wm:managed-p) buf (buffer-live-p buf) 
+             (get-buffer-window buf))
+        (when (= 0 (minibuffer-depth))
+          (e2wm:def-plugin-R-grlist-update))
+      (when e2wm:def-plugin-R-grlist-timer-handle
+        (cancel-timer e2wm:def-plugin-R-grlist-timer-handle)
+        (setq e2wm:def-plugin-R-grlist-timer-handle nil)
+        (when buf (kill-buffer buf))
+        (e2wm:message "WM: 'R-graphics-list' update timer stopped.")))))
+
+
+(defun e2wm:def-plugin-R-grlist-update ()
+  (interactive)
+  (let* ((buf (get-buffer-create e2wm:R-grlist-buffer))
+         (dir (e2wm:def-plugin-R-graphics-fix-directory e2wm:def-plugin-R-graphics-thumnail-dir))
+         (flist (directory-files dir)))
+    (when (buffer-file-name (current-buffer))
+      (with-current-buffer buf
+        (unwind-protect
+            (progn
+              (setq buffer-read-only nil)
+              (erase-buffer)
+              (dolist (i flist)
+                (unless (or
+                         (string= i  ".")
+                         (string= i  ".." ))
+                  (insert (concat "  " i "\n"))))
+              (backward-char 1))
+          (setq buffer-read-only t))))))
+
+(defun e2wm:def-plugin-R-grlist-view ()
+  (interactive)
+  (let*
+      ((dir (e2wm:def-plugin-R-graphics-fix-directory 
+             e2wm:def-plugin-R-graphics-thumnail-dir))
+       (file (e2wm:def-plugin-R-grlist-object))
+       (fp (concat dir file))
+       (buf (find-file-noselect fp)))
+    (when (get-buffer e2wm:R-graphics-buffer)
+      (kill-buffer e2wm:R-graphics-buffer))
+    (set-buffer buf)
+    (setq mode-line-format 
+          '("-" mode-line-mule-info
+            " " mode-line-position "-%-"))
+    (rename-buffer e2wm:R-graphics-buffer)
+    (wlf:set-buffer (e2wm:pst-get-wm) 'R-graphics (current-buffer))))
+
+
+(defun e2wm:def-plugin-R-grlist-object ()
+  "Return name of file on current line."
+  (save-excursion
+    (beginning-of-line)
+    (forward-char 2)
+    (let (beg)
+      (setq beg (point))
+      (search-forward "\n")
+      (backward-char 1)
+      (buffer-substring-no-properties beg (point)))))
+
+(defun e2wm:def-plugin-R-grlist-delete (arg)
+  "Mark the current (or next ARG) file for deletion."
+  (interactive "p")
+  (e2wm:def-plugin-R-grlist-mark "D" arg nil))
+
+(defun e2wm:def-plugin-R-grlist-undelete (arg)
+  "Unmark the current (or next ARG) file for deletion."
+  (interactive "p")
+  (e2wm:def-plugin-R-grlist-mark " " arg nil))
+
+(defun e2wm:def-plugin-R-grlist-all-delete (arg)
+  "Mark the current (or next ARG) objects for deletion."
+  (interactive "p")
+  (e2wm:def-plugin-R-grlist-mark "D" arg t))
+
+(defun e2wm:def-plugin-R-grlist-all-undelete (arg)
+  "Unmark the current (or next ARG) objects.
+If point is on first line, all objects will be unmarked."
+  (interactive "p")
+  (e2wm:def-plugin-R-grlist-mark " " arg t))
+
+
+(defun e2wm:def-plugin-R-grlist-mark (mark-char arg all)
+  "English:
+Mark the file, using MARK-CHAR,  on current line (or next ARG lines). 
+ALL is non-nil , all file mark.
+Japanese:
+ファイルにマークをつける。ALLがnon-nilの時は全てのファイルにマークがつけられる。"
+  (let ((buffer-read-only nil)
+        move)
+    (when all
+	  (setq move (point))
+	  (setq arg (count-lines (point) (point-max))))
+    (while (and (> arg 0) (not (eobp)))
+      (setq arg (1- arg))
+      (beginning-of-line)
+      (progn
+        (insert mark-char)
+        (delete-char 1)
+        (forward-line 1)))
+    (if move
+        (goto-char move))))
+
+
+(defun e2wm:def-plugin-R-grlist-expunge ()
+  "English:
+Delete the marked file.
+User is queried first to check that objects should really be deleted.
+Japanese:
+マークされたファイルを削除する。"
+  (interactive)
+  (let ((flist nil)
+        (count 0)
+        (buffer-read-only nil))
+    (save-excursion
+      (goto-char (point-min))
+      ;;(forward-line 1)
+      (while (< (count-lines (point-min) (point))
+                (count-lines (point-min) (point-max)))
+        (beginning-of-line)
+        (if (looking-at "^D ")
+            (progn
+              (setq count (1+ count))
+              (push (e2wm:def-plugin-R-grlist-object) flist)
+              (forward-line 1))
+          (forward-line 1))))
+    (if 
+        (yes-or-no-p
+         (format "Delete %d %s " count
+                 (if (> count 1) "objects" "object")))
+        (progn
+          (save-excursion
+            (goto-char (point-min))
+            (while (< (count-lines (point-min) (point))
+                      (count-lines (point-min) (point-max)))
+              (beginning-of-line)
+              (if (looking-at "^D ")
+                  (kill-whole-line)
+                (forward-line 1))))
+          (dolist (i flist)
+            (delete-file
+             (concat
+              (e2wm:def-plugin-R-graphics-fix-directory
+               e2wm:def-plugin-R-graphics-thumnail-dir) i))))
+      ;; else nothing to delete
+      (message "no objects set to delete"))
+    ))
+
+
+;;; open / バッファ表示・コマンド実行
+;;; 指定のバッファを表示バッファの存在をチェックして、無かったらコマンドを実行
+;;;--------------------------------------------------
+
+(defun e2wm:def-plugin-R-open (frame wm winfo)
+  (let* ((plugin-args (wlf:window-option-get winfo :plugin-args))
+         (buffer-name (plist-get plugin-args ':buffer))
+         (command (plist-get plugin-args ':command)) buf)
+    (unless (and command buffer-name)
+      (error "e2wm:plugin open: arguments can not be nil. Check the options."))
+    (setq buf (get-buffer buffer-name))
+    (unless buf
+      (with-selected-window (wlf:get-window wm (wlf:window-name winfo))
+        (setq buf (funcall command))))
+    (when buf
+      (with-current-buffer buf
+        (unwind-protect
+            (progn
+              (setq buffer-read-only nil)
+              (setq mode-line-format 
+                    '("-" mode-line-mule-info
+                      " " mode-line-position "-%-")))
+          (setq buffer-read-only nil)))
+      (wlf:set-buffer wm (wlf:window-name winfo) buf))))
+(e2wm:plugin-register 'R-open
+                      "Open R interpreter"
+                      'e2wm:def-plugin-R-open)
+
+
+(provide 'e2wm-R)
+             
