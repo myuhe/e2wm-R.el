@@ -1,6 +1,38 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; e2wm-R.el --- some e2wm plugin and perspective for GNU R
+
+;; Author: myuhe
+;; URL: 
+;; Version: 0.2
+;; Created: 2011-03-15
+;; Keywords:  window manager, convenience, e2wm
+;; Package-Requires: ((e2wm "1.2"))
+;; Copyright (C) 2011 myuhe
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; e2wm is a window manager. e2wm makes windowlayout easy.
+;; e2wm-R is a e2wm plugin for GNU R. It provides some window
+;; to manage graphics or R objects.
+
+;;; Changelog:
+;;  2011-07-12 ess help buffer is now closed like popwin.el
+;;             new command: e2wm:dp-R-popup-obj    
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;require
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (require 'cl)
 (require'ess-site)
@@ -28,7 +60,6 @@
                R-dired
                imenu))
          sub)))
-
 
 ;; (defvar e2wm:c-R-code-recipe
 ;;   '(| (:left-max-size 25)
@@ -79,6 +110,7 @@
     (wlf:set-buffer code-wm 'main buf)
     code-wm))
 
+
 (defvar e2wm:dp-R-code-minor-mode-map 
   (e2wm:define-keymap
    '(("prefix h" . e2wm:dp-code-navi-history-command)
@@ -89,17 +121,22 @@
      ("prefix c" . e2wm:dp-code-toggle-clock-command)
      ("prefix g" . e2wm:def-plugin-R-graphics-timestamp-draw)
      ("prefix G" . e2wm:def-plugin-R-graphics-draw)
-     ("prefix m" . e2wm:dp-code-main-maximize-toggle-command))
+     ("prefix m" . e2wm:dp-code-main-maximize-toggle-command)
+     ("C-c m" . e2wm:dp-code-popup-messages)
+     ("C-c v" . e2wm:dp-R-popup-obj))
    e2wm:prefix-key))
 
 ;;; commands / R-code
 ;;;--------------------------------------------------
-
-
 (defun e2wm:dp-R-code ()
   (interactive)
   (e2wm:pst-change 'R-code))
 
+(defun e2wm:dp-R-popup-obj ()
+  (interactive)
+  (let ((objname (current-word)))
+        (ess-execute (ess-rdired-get objname) nil "R object")
+        (select-window (wlf:get-window (e2wm:pst-get-wm) 'sub))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;perspective definition : R-view / R graphics view
@@ -158,18 +195,19 @@
    '(("prefix h" . e2wm:dp-code-navi-history-command)
      ("prefix l" . e2wm:dp-R-navi-grlist-command)
      ("prefix d" . e2wm:dp-R-navi-dired-command)
-     ("prefix s" . e2wm:dp-code-sub-toggle-command)
+     ("prefix s" . e2wm:dp-code-navi-sub-command)
+     ("prefix S" . e2wm:dp-code-sub-toggle-command)
      ("prefix c" . e2wm:dp-code-toggle-clock-command)
      ("prefix g" . e2wm:def-plugin-R-graphics-timestamp-draw)
      ("prefix G" . e2wm:def-plugin-R-graphics-draw)
-     ("prefix m" . e2wm:dp-code-main-maximize-toggle-command))
+     ("prefix m" . e2wm:dp-code-main-maximize-toggle-command)
+     ("C-c m" . e2wm:dp-code-popup-messages)
+     ("C-c v" . e2wm:dp-R-popup-obj))
    e2wm:prefix-key))
-
 
 (defun e2wm:dp-R-view ()
   (interactive)
   (e2wm:pst-change 'R-view))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;perspective definition : Common Commands
@@ -197,7 +235,6 @@ e2wmをRで開始する。"
     (e2wm:pst-set-prev-pst nil)
     (e2wm:pst-change 'R-code) 
     (e2wm:menu-define)
-
     (run-hooks 'e2wm:post-start-hook))))
 
 (defun e2wm:dp-R-code-popup (buf)
@@ -221,10 +258,26 @@ e2wmをRで開始する。"
       ;;(prefix) C-lなどで元のバッファに戻すため
       (set-window-buffer (wlf:get-window wm 'main) buf)
       t)
-     (
-      (string= "*R*" buf-name)
+     ((string= "*R*" buf-name)
       (wlf:set-buffer (e2wm:pst-get-wm) 'proc buf)
       ;;(e2wm:pst-buffer-set 'main buf t)
+      t)
+     ((string-match "^*help" buf-name)
+      (e2wm:dp-code-popup-sub buf)
+      ;; (other-window)
+      (e2wm:start-close-popup-window-timer)
+      t)
+     ((string-match "\\.rt$" buf-name)
+      (e2wm:dp-code-popup-sub buf)
+      ;; (other-window)
+      (e2wm:start-close-popup-window-timer)
+      (select-window (wlf:get-window (e2wm:pst-get-wm) 'sub))
+      t)
+     ((string-match "*R object*" buf-name)
+      (e2wm:dp-code-popup-sub buf)
+      ;; (other-window)
+      (e2wm:start-close-popup-window-timer)
+      (select-window (wlf:get-window (e2wm:pst-get-wm) 'sub))
       t)
      ((and e2wm:c-code-show-main-regexp
            (string-match e2wm:c-code-show-main-regexp buf-name))
@@ -234,6 +287,8 @@ e2wmをRで開始する。"
       (e2wm:dp-code-popup-sub buf)
       t))))
 
+;;ess-transcript-modeで新たにbufferを作成
+;;(inferior-R-input-sender nil "page(iris)")
 
 (defun e2wm:dp-R-navi-dired-command ()
   (interactive)
@@ -395,10 +450,11 @@ Arguments IGNORE and NOCONFIRM currently not used."
             (wlf:get-buffer (e2wm:pst-get-wm) 'main))))
          (dir (concat main-dir img-dir)))
     (unless (file-directory-p dir)
-      (when (or e2wm:def-plugin-R-graphics-dir-ok 
+      (when (and (string= mode-name "ESS[S]")
+          (or e2wm:def-plugin-R-graphics-dir-ok 
                 (y-or-n-p 
                  (format "Image directory [%s] not found. Create it ?" 
-                         dir)))
+                         dir))))
         (make-directory dir))
       (unless (file-directory-p dir)
         (error "Could not create a image directory.")))
@@ -509,7 +565,8 @@ With prefix arg don't preserve the aspect ratio."
                            filename "." format))
                 (noverbose quiet))
     (let* ((buf (get-buffer e2wm:R-graphics-buffer))
-           (edges  (window-inside-pixel-edges (wlf:get-window (e2wm:pst-get-wm) 'R-graphics)))
+           (edges  (window-inside-pixel-edges
+                    (wlf:get-window (e2wm:pst-get-wm) 'R-graphics)))
            (width  (- (nth 2 edges) (nth 0 edges)))
            (height (- (nth 3 edges) (nth 1 edges))))
       (apply #'start-process "resize-image" nil "convert"
@@ -616,7 +673,8 @@ With prefix arg don't preserve the aspect ratio."
 (defun e2wm:def-plugin-R-grlist-update ()
   (interactive)
   (let* ((buf (get-buffer-create e2wm:R-grlist-buffer))
-         (dir (e2wm:def-plugin-R-graphics-fix-directory e2wm:def-plugin-R-graphics-thumnail-dir))
+         (dir (e2wm:def-plugin-R-graphics-fix-directory
+               e2wm:def-plugin-R-graphics-thumnail-dir))
          (flist (directory-files dir)))
     (when (buffer-file-name (current-buffer))
       (with-current-buffer buf
@@ -749,7 +807,6 @@ Japanese:
       (message "no objects set to delete"))
     ))
 
-
 ;;; open / バッファ表示・コマンド実行
 ;;; 指定のバッファを表示バッファの存在をチェックして、無かったらコマンドを実行
 ;;;--------------------------------------------------
@@ -778,6 +835,68 @@ Japanese:
                       "Open R interpreter"
                       'e2wm:def-plugin-R-open)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;Internal / popup
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar e2wm:close-popup-window-timer nil
+  "Timer of closing the popup window.")
+
+(defun e2wm:start-close-popup-window-timer ()
+  (or e2wm:close-popup-window-timer
+      (setq e2wm:close-popup-window-timer
+            (run-with-timer popwin:close-popup-window-timer-interval
+                            popwin:close-popup-window-timer-interval
+                            'e2wm:close-popup-window-timer))))
+
+(defun e2wm:close-popup-window-timer ()
+  (condition-case var
+      (e2wm:close-popup-window-if-necessary
+       (e2wm:should-close-popup-window-p))
+    (error (message "e2wm:close-popup-window-timer: error: %s" var))))
+
+(defun e2wm:close-popup-window-if-necessary (&optional force)
+  "Close the popup window if another window has been selected. If
+FORCE is non-nil, this function tries to close the popup window
+immediately if possible, and the lastly selected window will be
+selected again."
+  (when (wlf:get-window (e2wm:pst-get-wm) 'sub)
+    (let* ((window (selected-window))
+           (minibuf-window-p (eq window (minibuffer-window)))
+           (other-window-selected
+            (and (not (eq window (wlf:get-window (e2wm:pst-get-wm) 'sub)))
+                 (not (eq window (wlf:get-window (e2wm:pst-get-wm) 'main)))))
+           ;; (not-stuck-or-closed
+           ;;  (or (not popwin:popup-window-stuck-p)
+           ;;      (not (popwin:popup-window-live-p))))
+           )
+      (when (and (not minibuf-window-p)
+                 (or force other-window-selected))
+        (wlf:hide (e2wm:pst-get-wm) 'sub)
+        (e2wm:pst-window-select-main-command)
+        (e2wm:stop-close-popup-window-timer)
+        ;; (popwin:close-popup-window other-window-selected)
+        ))))
+
+(defun e2wm:should-close-popup-window-p ()
+  "Return t if popwin should close the popup window
+immediately. It might be useful if this is customizable
+function."
+  (and (wlf:get-window (e2wm:pst-get-wm) 'sub)
+       (and (eq last-command 'keyboard-quit)
+            (eq last-command-event ?\C-g))))
+
+(defun e2wm:stop-close-popup-window-timer ()
+  (when e2wm:close-popup-window-timer
+    (cancel-timer e2wm:close-popup-window-timer)
+    (setq e2wm:close-popup-window-timer nil)))
+
+(defun e2wm:dp-code-popup-messages ()
+  (interactive)
+  (e2wm:dp-code-popup-sub "*Messages*")
+  (e2wm:start-close-popup-window-timer)
+  (e2wm:pst-window-select-main-command))
 
 (provide 'e2wm-R)
              
+;;; e2wm-bookmark.el ends here
