@@ -2,7 +2,7 @@
 
 ;; Author: myuhe
 ;; URL: 
-;; Version: 0.2
+;; Version: 0.3
 ;; Created: 2011-03-15
 ;; Keywords:  window manager, convenience, e2wm
 ;; Package-Requires: ((e2wm "1.2"))
@@ -30,6 +30,7 @@
 ;;; Changelog:
 ;;  2011-07-12 ess help buffer is now closed like popwin.el
 ;;             new command: e2wm:dp-R-popup-obj    
+;;  2011-08-15 bug fix
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;require
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -302,7 +303,6 @@ e2wmをRで開始する。"
   (interactive)
   (wlf:select (e2wm:pst-get-wm) 'R-graphics-list))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;plugin definition / R-dired plugin
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -312,6 +312,11 @@ e2wmをRで開始する。"
 (defvar e2wm:def-plugin-R-dired-timer-handle nil "timer object")
 (defvar e2wm:rdired-tmp-buffer " *tmp-Rdired*"
   "Name of buffer for temporal R objects.")
+
+(defvar e2wm:rdired-tmp-str  nil
+  "Name of string for temporal R objects.")
+(defvar e2wm:rdired-str  nil
+  "Name of string for temporal R objects.")
 
 (e2wm:plugin-register 'R-dired
                       "R-Dired"
@@ -339,8 +344,11 @@ e2wmをRで開始する。"
   ;;bufferが死んでいれば、タイマー停止
   ;;bufferが生きていれば更新実行
   (let ((buf (get-buffer e2wm:rdired-buffer)))
-    (if (and (e2wm:managed-p) buf (buffer-live-p buf) 
-             (get-buffer-window buf))
+    (if (and
+         (e2wm:managed-p)
+         buf (buffer-live-p buf) 
+         (get-buffer-window buf)
+             )
         (when (= 0 (minibuffer-depth))
           (e2wm:def-plugin-R-timer-revert))
       (when e2wm:def-plugin-R-dired-timer-handle
@@ -384,15 +392,12 @@ e2wmをRで開始する。"
     (e2wm:pst-window-select 'R-dired)))
 
 (defun e2wm:def-plugin-R-timer-revert ()
-  (let ((buf (get-buffer-create e2wm:rdired-buffer))
-        (tmpbuf (get-buffer-create e2wm:rdired-tmp-buffer)))
+  (let ((buf (get-buffer e2wm:rdired-buffer))
+        ;;(tmpbuf (get-buffer-create e2wm:rdired-tmp-buffer))
+        )
     (when (or (string= mode-name "ESS[S]")
               (string= (buffer-name (current-buffer)) "*R*"))
-      (e2wm:def-plugin-R-revert)
-      (kill-buffer e2wm:rdired-buffer)
-      (set-buffer tmpbuf)
-      (rename-buffer e2wm:rdired-buffer)
-      (wlf:set-buffer (e2wm:pst-get-wm) 'R-dired (current-buffer)))))
+          (e2wm:def-plugin-R-revert))))
 
 (defun e2wm:def-plugin-R-revert-buffer (ignore noconfirm)
   "Update the buffer list (in case object list has changed).
@@ -401,7 +406,7 @@ Arguments IGNORE and NOCONFIRM currently not used."
 
 (defun e2wm:def-plugin-R-revert()
   (interactive)
-  (let ((buf (get-buffer-create e2wm:rdired-tmp-buffer)))
+  (let* ((buf (get-buffer-create e2wm:rdired-buffer)))
     (with-current-buffer buf
       (setq buffer-read-only nil)
       (e2wm:def-plugin-R-dired-mode)
@@ -410,15 +415,22 @@ Arguments IGNORE and NOCONFIRM currently not used."
             '("-" mode-line-mule-info
               " " mode-line-position "-%-"))
       (e2wm:def-plugin-R-execute ess-rdired-objects)
-      (delete-char (* (1- (length (split-string ess-rdired-objects "\n"))) 2))
-      (setq ess-rdired-sort-num 1)
-      (ess-rdired-insert-set-properties 
-       (save-excursion
-         (goto-char (point-min))
-         (forward-line 1)
-         (point))
-       (point-max))
-      (setq buffer-read-only t))))
+      (unless (string= e2wm:rdired-tmp-str (buffer-string))
+        (erase-buffer)
+        (e2wm:message "===== Rdired timer is alive!! ==== %s" 
+                      (format-time-string "%H:%M:%S" (current-time)))
+        (insert e2wm:rdired-tmp-str)
+        (setq e2wm:rdired-str (buffer-string))
+        (setq ess-rdired-sort-num 1)
+        (ess-rdired-insert-set-properties 
+         (save-excursion
+           (goto-char (point-min))
+           (forward-line 1)
+           (point))
+         (point-max))
+        (wlf:set-buffer (e2wm:pst-get-wm) 'R-dired (get-buffer e2wm:rdired-buffer)))
+        (setq buffer-read-only t))))
+
 
 (defun e2wm:def-plugin-R-execute (command)
   (ess-make-buffer-current)
@@ -429,6 +441,8 @@ Arguments IGNORE and NOCONFIRM currently not used."
         (set-buffer buff)
         (ess-command the-command (get-buffer buff-name))
         (goto-char (point-min))
+        (delete-char (* (1- (length (split-string ess-rdired-objects "\n"))) 2))
+        (setq e2wm:rdired-tmp-str (buffer-string))
         (setq ess-local-process-name ess-current-process-name)))))
 
 
@@ -601,6 +615,7 @@ With prefix arg don't preserve the aspect ratio."
 (defvar e2wm:R-grlist-buffer " *WM:R-graphics-list*"
   "Name of buffer for displaying R objects.")
 (defvar e2wm:def-plugin-R-grlist-timer-handle nil "[internal use]")
+(defvar e2wm:R-grlist-tmp-list nil "Name of list for files")
 
 (e2wm:plugin-register 'R-graphics-list
                       "R-graphics-list"
@@ -619,6 +634,7 @@ With prefix arg don't preserve the aspect ratio."
      ("D" . e2wm:def-plugin-R-grlist-all-delete)
      ("U" . e2wm:def-plugin-R-grlist-all-undelete)
      ("v" . e2wm:def-plugin-R-grlist-view)
+     ("C-m" . e2wm:def-plugin-R-grlist-view)
      ("x" . e2wm:def-plugin-R-grlist-expunge)
      ("q" . e2wm:pst-window-select-main-command)
      ("g" . e2wm:def-plugin-R-grlist-update)
@@ -633,8 +649,7 @@ With prefix arg don't preserve the aspect ratio."
   ;;bufferが生きていればバッファを表示するだけ（タイマーに任せる）
   ;;bufferが無ければ初回更新してタイマー開始する
   (let ((buf (get-buffer-create e2wm:R-grlist-buffer)))
-    ;; (unless (and buf (buffer-live-p buf))
-    ;;   (setq buf (e2wm:def-plugin-top-update)))
+    (setq e2wm:R-grlist-tmp-list nil)
     (with-current-buffer buf
       (unwind-protect
           (progn
@@ -649,11 +664,8 @@ With prefix arg don't preserve the aspect ratio."
             (run-at-time
              6
              6
-             'e2wm:def-plugin-R-grlist-timer))
-      )
-    (wlf:set-buffer wm (wlf:window-name winfo) buf)
-    ))
-
+             'e2wm:def-plugin-R-grlist-timer)))
+    (wlf:set-buffer wm (wlf:window-name winfo) buf)))
 
 (defun e2wm:def-plugin-R-grlist-timer ()
   ;;bufferが死んでいれば、タイマー停止
@@ -677,9 +689,12 @@ With prefix arg don't preserve the aspect ratio."
                e2wm:def-plugin-R-graphics-thumnail-dir))
          (flist (directory-files dir)))
     (when (buffer-file-name (current-buffer))
-      (with-current-buffer buf
-        (unwind-protect
+      (unless (equal flist e2wm:R-grlist-tmp-list)
+        (with-current-buffer buf
+          (unwind-protect
             (progn
+              (e2wm:message "===== Rgrlist timer is alive!! ==== %s" 
+                            (format-time-string "%H:%M:%S" (current-time)))
               (setq buffer-read-only nil)
               (erase-buffer)
               (dolist (i flist)
@@ -688,7 +703,9 @@ With prefix arg don't preserve the aspect ratio."
                          (string= i  ".." ))
                   (insert (concat "  " i "\n"))))
               (backward-char 1))
-          (setq buffer-read-only t))))))
+              (setq buffer-read-only t))))
+      (setq e2wm:R-grlist-tmp-list flist)
+      )))
 
 (defun e2wm:def-plugin-R-grlist-view ()
   (interactive)
@@ -706,7 +723,6 @@ With prefix arg don't preserve the aspect ratio."
             " " mode-line-position "-%-"))
     (rename-buffer e2wm:R-graphics-buffer)
     (wlf:set-buffer (e2wm:pst-get-wm) 'R-graphics (current-buffer))))
-
 
 (defun e2wm:def-plugin-R-grlist-object ()
   "Return name of file on current line."
@@ -883,7 +899,7 @@ selected again."
 immediately. It might be useful if this is customizable
 function."
   (and (wlf:get-window (e2wm:pst-get-wm) 'sub)
-       (and (eq last-command 'keyboard-quit)
+        (and (eq last-command 'keyboard-quit)
             (eq last-command-event ?\C-g))))
 
 (defun e2wm:stop-close-popup-window-timer ()
@@ -899,4 +915,4 @@ function."
 
 (provide 'e2wm-R)
              
-;;; e2wm-bookmark.el ends here
+;;; e2wm-R.el ends here
