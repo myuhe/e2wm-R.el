@@ -220,7 +220,7 @@
   "English:
 start window management with R code
 Japanese:
-e2wm¤òR¤Ç³«»Ï¤¹¤ë¡£"
+e2wmã‚’Rã§é–‹å§‹ã™ã‚‹ã€‚"
   (interactive)
   (cond
    (e2wm:pst-minor-mode
@@ -230,18 +230,18 @@ e2wm¤òR¤Ç³«»Ï¤¹¤ë¡£"
     (e2wm:frame-param-set 
      'e2wm-save-window-configuration 
      (current-window-configuration))
-    (e2wm:history-add-loaded-buffers) ; Á´Éô¤Ä¤Ã¤³¤à
+    (e2wm:history-add-loaded-buffers) ; å…¨éƒ¨ã¤ã£ã“ã‚€
     (e2wm:history-save-backup nil)
     (e2wm:pst-minor-mode 1)
     (ad-activate-regexp "^e2wm:ad-debug" t) ; debug
-    (e2wm:pstset-defaults) ; Á´Éô»È¤¦
+    (e2wm:pstset-defaults) ; å…¨éƒ¨ä½¿ã†
     (e2wm:pst-set-prev-pst nil)
     (e2wm:pst-change 'R-code) 
     (e2wm:menu-define)
     (run-hooks 'e2wm:post-start-hook))))
 
 (defun e2wm:dp-R-code-popup (buf)
-  ;;¤È¤ê¤¢¤¨¤ºÁ´Éôsub¤ÇÉ½¼¨¤·¤Æ¤ß¤ë
+  ;;ã¨ã‚Šã‚ãˆãšå…¨éƒ¨subã§è¡¨ç¤ºã—ã¦ã¿ã‚‹
   (let ((cb (current-buffer)))
     (e2wm:message "#DP CODE popup : %s (current %s / backup %s)" 
                  buf cb e2wm:override-window-cfg-backup))
@@ -250,15 +250,15 @@ e2wm¤òR¤Ç³«»Ï¤¹¤ë¡£"
     (cond
      ((e2wm:history-recordable-p buf)
       (e2wm:pst-show-history-main)
-      ;;µ­Ï¿ÂĞ¾İ¤Ê¤éÍúÎò¤Ë»Ä¤ë¤Î¤Çupdate¤ÇÉ½¼¨¤ò¹¹¿·¤µ¤»¤ë
+      ;;è¨˜éŒ²å¯¾è±¡ãªã‚‰å±¥æ­´ã«æ®‹ã‚‹ã®ã§updateã§è¡¨ç¤ºã‚’æ›´æ–°ã•ã›ã‚‹
       t)
      ((and e2wm:override-window-cfg-backup
        (eq (selected-window) (wlf:get-window wm 'sub)))
-      ;;¸½ºßsub¤Ê¤émain¤ËÉ½¼¨¤·¤è¤¦¤È¤¹¤ë
-      ;;minibuffer°Ê³°¤ÎÊä´°¥Ğ¥Ã¥Õ¥¡¤ÏÆ°¤­¤¬ÆÃ¼ì¤Ê¤Î¤Çbackup¤ònil¤Ë¤¹¤ë
+      ;;ç¾åœ¨subãªã‚‰mainã«è¡¨ç¤ºã—ã‚ˆã†ã¨ã™ã‚‹
+      ;;minibufferä»¥å¤–ã®è£œå®Œãƒãƒƒãƒ•ã‚¡ã¯å‹•ããŒç‰¹æ®Šãªã®ã§backupã‚’nilã«ã™ã‚‹
       (setq e2wm:override-window-cfg-backup nil)
-      ;;°ì»şÅª¤ËÉ½¼¨¤¹¤ë¤¿¤á¤Ëset-window-buffer¤ò»È¤¦
-      ;;(prefix) C-l¤Ê¤É¤Ç¸µ¤Î¥Ğ¥Ã¥Õ¥¡¤ËÌá¤¹¤¿¤á
+      ;;ä¸€æ™‚çš„ã«è¡¨ç¤ºã™ã‚‹ãŸã‚ã«set-window-bufferã‚’ä½¿ã†
+      ;;(prefix) C-lãªã©ã§å…ƒã®ãƒãƒƒãƒ•ã‚¡ã«æˆ»ã™ãŸã‚
       (set-window-buffer (wlf:get-window wm 'main) buf)
       t)
      ((string= "*R*" buf-name)
@@ -290,7 +290,7 @@ e2wm¤òR¤Ç³«»Ï¤¹¤ë¡£"
       (e2wm:dp-code-popup-sub buf)
       t))))
 
-;;ess-transcript-mode¤Ç¿·¤¿¤Ëbuffer¤òºîÀ®
+;;ess-transcript-modeã§æ–°ãŸã«bufferã‚’ä½œæˆ
 ;;(inferior-R-input-sender nil "page(iris)")
 
 (defun e2wm:dp-R-navi-dired-command ()
@@ -346,8 +346,8 @@ e2wm¤òR¤Ç³«»Ï¤¹¤ë¡£"
     (wlf:set-buffer wm (wlf:window-name winfo) buf)))
 
 (defun e2wm:def-plugin-R-dired-timer ()
-  ;;buffer¤¬»à¤ó¤Ç¤¤¤ì¤Ğ¡¢¥¿¥¤¥Ş¡¼Ää»ß
-  ;;buffer¤¬À¸¤­¤Æ¤¤¤ì¤Ğ¹¹¿·¼Â¹Ô
+  ;;bufferãŒæ­»ã‚“ã§ã„ã‚Œã°ã€ã‚¿ã‚¤ãƒãƒ¼åœæ­¢
+  ;;bufferãŒç”Ÿãã¦ã„ã‚Œã°æ›´æ–°å®Ÿè¡Œ
   (let ((buf (get-buffer e2wm:rdired-buffer)))
     (if (and
          (e2wm:managed-p)
@@ -460,8 +460,8 @@ Arguments IGNORE and NOCONFIRM currently not used."
 (defvar e2wm:def-plugin-R-graphics-dir-ok nil)
 
 (defun e2wm:def-plugin-R-graphics-fix-directory (dir-arg)
-  ;;¥Ğ¥Ã¥Õ¥¡¤Î¥«¥ì¥ó¥È¥Ç¥£¥ì¥¯¥È¥ê¤ËÊİÂ¸Àè¥Ç¥£¥ì¥¯¥È¥ê¤òºî¤ë
-  ;;°ì±şºî¤Ã¤ÆÎÉ¤¤¤«¤É¤¦¤«Ê¹¤¯
+  ;;ãƒãƒƒãƒ•ã‚¡ã®ã‚«ãƒ¬ãƒ³ãƒˆãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã«ä¿å­˜å…ˆãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’ä½œã‚‹
+  ;;ä¸€å¿œä½œã£ã¦è‰¯ã„ã‹ã©ã†ã‹èã
   (let* ((img-dir dir-arg)
          (main-dir 
           (file-name-directory 
@@ -572,8 +572,8 @@ Arguments IGNORE and NOCONFIRM currently not used."
 
 (defun e2wm:def-plugin-R-graphics-img-fit (file filename format &optional arg quiet)
   "Japanese:
-¥¦¥£¥ó¥É¥¦¤ÎÂç¤­¤µ¤Ë¹ç¤ï¤»¤Æ²èÁü¤ò¥ê¥µ¥¤¥º¤¹¤ë¡£
-°ú¿ô arg¤¬nonnil¤À¤È½Ä²£¤ÎÈæÎ¨¤òÊİ»ı¤·¤Ê¤¤¡£
+ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã®å¤§ãã•ã«åˆã‚ã›ã¦ç”»åƒã‚’ãƒªã‚µã‚¤ã‚ºã™ã‚‹ã€‚
+å¼•æ•° argãŒnonnilã ã¨ç¸¦æ¨ªã®æ¯”ç‡ã‚’ä¿æŒã—ãªã„ã€‚
 English:
 Resize image to current window size.
 With prefix arg don't preserve the aspect ratio."
@@ -651,8 +651,8 @@ With prefix arg don't preserve the aspect ratio."
   "R graphics list")
 
 (defun e2wm:def-plugin-R-grlist (frame wm winfo)
-  ;;buffer¤¬À¸¤­¤Æ¤¤¤ì¤Ğ¥Ğ¥Ã¥Õ¥¡¤òÉ½¼¨¤¹¤ë¤À¤±¡Ê¥¿¥¤¥Ş¡¼¤ËÇ¤¤»¤ë¡Ë
-  ;;buffer¤¬Ìµ¤±¤ì¤Ğ½é²ó¹¹¿·¤·¤Æ¥¿¥¤¥Ş¡¼³«»Ï¤¹¤ë
+  ;;bufferãŒç”Ÿãã¦ã„ã‚Œã°ãƒãƒƒãƒ•ã‚¡ã‚’è¡¨ç¤ºã™ã‚‹ã ã‘ï¼ˆã‚¿ã‚¤ãƒãƒ¼ã«ä»»ã›ã‚‹ï¼‰
+  ;;bufferãŒç„¡ã‘ã‚Œã°åˆå›æ›´æ–°ã—ã¦ã‚¿ã‚¤ãƒãƒ¼é–‹å§‹ã™ã‚‹
   (let ((buf (get-buffer-create e2wm:R-grlist-buffer)))
     (setq e2wm:R-grlist-tmp-list nil)
     (with-current-buffer buf
@@ -673,8 +673,8 @@ With prefix arg don't preserve the aspect ratio."
     (wlf:set-buffer wm (wlf:window-name winfo) buf)))
 
 (defun e2wm:def-plugin-R-grlist-timer ()
-  ;;buffer¤¬»à¤ó¤Ç¤¤¤ì¤Ğ¡¢¥¿¥¤¥Ş¡¼Ää»ß
-  ;;buffer¤¬À¸¤­¤Æ¤¤¤ì¤Ğ¹¹¿·¼Â¹Ô
+  ;;bufferãŒæ­»ã‚“ã§ã„ã‚Œã°ã€ã‚¿ã‚¤ãƒãƒ¼åœæ­¢
+  ;;bufferãŒç”Ÿãã¦ã„ã‚Œã°æ›´æ–°å®Ÿè¡Œ
   (let ((buf (get-buffer e2wm:R-grlist-buffer)))
     (if (and (e2wm:managed-p) buf (buffer-live-p buf) 
              (get-buffer-window buf))
@@ -767,7 +767,7 @@ If point is on first line, all objects will be unmarked."
 Mark the file, using MARK-CHAR,  on current line (or next ARG lines). 
 ALL is non-nil , all file mark.
 Japanese:
-¥Õ¥¡¥¤¥ë¤Ë¥Ş¡¼¥¯¤ò¤Ä¤±¤ë¡£ALL¤¬non-nil¤Î»ş¤ÏÁ´¤Æ¤Î¥Õ¥¡¥¤¥ë¤Ë¥Ş¡¼¥¯¤¬¤Ä¤±¤é¤ì¤ë¡£"
+ãƒ•ã‚¡ã‚¤ãƒ«ã«ãƒãƒ¼ã‚¯ã‚’ã¤ã‘ã‚‹ã€‚ALLãŒnon-nilã®æ™‚ã¯å…¨ã¦ã®ãƒ•ã‚¡ã‚¤ãƒ«ã«ãƒãƒ¼ã‚¯ãŒã¤ã‘ã‚‰ã‚Œã‚‹ã€‚"
   (let ((buffer-read-only nil)
         move)
     (when all
@@ -789,7 +789,7 @@ Japanese:
 Delete the marked file.
 User is queried first to check that objects should really be deleted.
 Japanese:
-¥Ş¡¼¥¯¤µ¤ì¤¿¥Õ¥¡¥¤¥ë¤òºï½ü¤¹¤ë¡£"
+ãƒãƒ¼ã‚¯ã•ã‚ŒãŸãƒ•ã‚¡ã‚¤ãƒ«ã‚’å‰Šé™¤ã™ã‚‹ã€‚"
   (interactive)
   (let ((flist nil)
         (count 0)
@@ -828,8 +828,8 @@ Japanese:
       (message "no objects set to delete"))
     ))
 
-;;; open / ¥Ğ¥Ã¥Õ¥¡É½¼¨¡¦¥³¥Ş¥ó¥É¼Â¹Ô
-;;; »ØÄê¤Î¥Ğ¥Ã¥Õ¥¡¤òÉ½¼¨¥Ğ¥Ã¥Õ¥¡¤ÎÂ¸ºß¤ò¥Á¥§¥Ã¥¯¤·¤Æ¡¢Ìµ¤«¤Ã¤¿¤é¥³¥Ş¥ó¥É¤ò¼Â¹Ô
+;;; open / ãƒãƒƒãƒ•ã‚¡è¡¨ç¤ºãƒ»ã‚³ãƒãƒ³ãƒ‰å®Ÿè¡Œ
+;;; æŒ‡å®šã®ãƒãƒƒãƒ•ã‚¡ã‚’è¡¨ç¤ºãƒãƒƒãƒ•ã‚¡ã®å­˜åœ¨ã‚’ãƒã‚§ãƒƒã‚¯ã—ã¦ã€ç„¡ã‹ã£ãŸã‚‰ã‚³ãƒãƒ³ãƒ‰ã‚’å®Ÿè¡Œ
 ;;;--------------------------------------------------
 
 (defun e2wm:def-plugin-R-open (frame wm winfo)
