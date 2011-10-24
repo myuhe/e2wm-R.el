@@ -11,7 +11,7 @@
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
-;; (at your option) any later version.
+;; (a your option) any later version.
 
 ;; This program is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -31,6 +31,8 @@
 ;;  2011-07-12 ess help buffer is now closed like popwin.el
 ;;             new command: e2wm:dp-R-popup-obj    
 ;;  2011-08-15 bug fix
+;;  2011-10-24 bug fix: exclude duplicate timer
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;require
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -336,9 +338,12 @@ e2wmをRで開始する。"
               '("-" mode-line-mule-info
                 " " mode-line-position "-%-"))
         (setq buffer-read-only t)))
-    (wlf:set-buffer wm (wlf:window-name winfo) buf))
-  (setq e2wm:def-plugin-R-dired-timer-handle
-        (run-at-time 5 5 'e2wm:def-plugin-R-dired-timer)))
+    
+  (unless e2wm:def-plugin-R-dired-timer-handle
+      (setq e2wm:def-plugin-R-dired-timer-handle
+            (run-at-time 5 5
+             'e2wm:def-plugin-R-dired-timer)))
+    (wlf:set-buffer wm (wlf:window-name winfo) buf)))
 
 (defun e2wm:def-plugin-R-dired-timer ()
   ;;bufferが死んでいれば、タイマー停止
@@ -653,7 +658,7 @@ With prefix arg don't preserve the aspect ratio."
     (with-current-buffer buf
       (unwind-protect
           (progn
-            (setq buffer-read-only nil)
+            (setq buffer-read-only t)
             (e2wm:def-plugin-R-grlist-mode)
             (setq header-line-format "R graphics list")
             (setq mode-line-format 
