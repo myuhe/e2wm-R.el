@@ -204,8 +204,8 @@
      ("prefix g" . e2wm:def-plugin-R-graphics-timestamp-draw)
      ("prefix G" . e2wm:def-plugin-R-graphics-draw)
      ("prefix m" . e2wm:dp-code-main-maximize-toggle-command)
-     ("C-c m" . e2wm:dp-code-popup-messages)
-     ("C-c v" . e2wm:dp-R-popup-obj))
+     ("C-c m"    . e2wm:dp-code-popup-messages)
+     ("C-c v"    . e2wm:dp-R-popup-obj))
    e2wm:prefix-key))
 
 (defun e2wm:dp-R-view ()
@@ -314,7 +314,6 @@ e2wmをRで開始する。"
 (defvar e2wm:def-plugin-R-dired-timer-handle nil "timer object")
 (defvar e2wm:rdired-tmp-buffer " *tmp-Rdired*"
   "Name of buffer for temporal R objects.")
-
 (defvar e2wm:rdired-tmp-str  nil
   "Name of string for temporal R objects.")
 (defvar e2wm:rdired-str  nil
@@ -352,8 +351,7 @@ e2wmをRで開始する。"
     (if (and
          (e2wm:managed-p)
          buf (buffer-live-p buf) 
-         (get-buffer-window buf)
-             )
+         (get-buffer-window buf))
         (when (= 0 (minibuffer-depth))
           (e2wm:def-plugin-R-timer-revert))
       (when e2wm:def-plugin-R-dired-timer-handle
@@ -372,21 +370,21 @@ e2wmをRで開始する。"
 
 (defvar e2wm:def-plugin-R-dired-mode-map
   (e2wm:define-keymap 
-   '(("d"           . ess-rdired-delete)
-     ("u"           . ess-rdired-undelete)
-     ("x"           . ess-rdired-expunge)
-     ("v"           . e2wm:def-plugin-R-dired-view)
-     ("P"           . ess-rdired-plot)
-     ("s"           . ess-rdired-sort)
-     ("y"           . ess-rdired-type)
-     ("j"           . ess-rdired-next-line)
-     ("k"           . ess-rdired-previous-line)
-     ("n"           . ess-rdired-next-line)
-     ("p"           . ess-rdired-previous-line)  
-     ("C-n"         . ess-rdired-next-line)
-     ("C-p"         . ess-rdired-previous-line)    
-     ("g"           . revert-buffer)
-     ("q"           . e2wm:pst-window-select-main-command))))
+   '(("d"    . ess-rdired-delete)
+     ("u"    . ess-rdired-undelete)
+     ("x"    . ess-rdired-expunge)
+     ("v"    . e2wm:def-plugin-R-dired-view)
+     ("P"    . ess-rdired-plot)
+     ("s"    . ess-rdired-sort)
+     ("y"    . ess-rdired-type)
+     ("j"    . ess-rdired-next-line)
+     ("k"    . ess-rdired-previous-line)
+     ("n"    . ess-rdired-next-line)
+     ("p"    . ess-rdired-previous-line)  
+     ("C-n"  . ess-rdired-next-line)
+     ("C-p"  . ess-rdired-previous-line)    
+     ("g"    . revert-buffer)
+     ("q"    . e2wm:pst-window-select-main-command))))
 
 (defun e2wm:def-plugin-R-dired-view ()
   "View the object at point."
@@ -565,8 +563,7 @@ Arguments IGNORE and NOCONFIRM currently not used."
         (setq count (1+ count))
         (message (concat "output image." (make-string count ?.)))    
         ;;(message "number %d" count)
-        (run-at-time
-         1 nil
+        (run-at-time 1 nil
          'e2wm:def-plugin-R-graphics-polling file filename format)))))
 
 
@@ -628,21 +625,21 @@ With prefix arg don't preserve the aspect ratio."
 
 (defvar e2wm:def-plugin-R-grlist-mode-map
   (e2wm:define-keymap 
-   '(("k" . ess-rdired-previous-line)
-     ("j" . ess-rdired-next-line)
-     ("p" . ess-rdired-previous-line)
-     ("n" . ess-rdired-next-line)
+   '(("k"   . ess-rdired-previous-line)
+     ("j"   . ess-rdired-next-line)
+     ("p"   . ess-rdired-previous-line)
+     ("n"   . ess-rdired-next-line)
      ("C-p" . ess-rdired-previous-line)
      ("C-n" . ess-rdired-next-line)
-     ("d" . e2wm:def-plugin-R-grlist-delete)
-     ("u" . e2wm:def-plugin-R-grlist-undelete)
-     ("D" . e2wm:def-plugin-R-grlist-all-delete)
-     ("U" . e2wm:def-plugin-R-grlist-all-undelete)
-     ("v" . e2wm:def-plugin-R-grlist-view)
+     ("d"   . e2wm:def-plugin-R-grlist-delete)
+     ("u"   . e2wm:def-plugin-R-grlist-undelete)
+     ("D"   . e2wm:def-plugin-R-grlist-all-delete)
+     ("U"   . e2wm:def-plugin-R-grlist-all-undelete)
+     ("v"   . e2wm:def-plugin-R-grlist-view)
      ("C-m" . e2wm:def-plugin-R-grlist-view)
-     ("x" . e2wm:def-plugin-R-grlist-expunge)
-     ("q" . e2wm:pst-window-select-main-command)
-     ("g" . e2wm:def-plugin-R-grlist-update)
+     ("x"   . e2wm:def-plugin-R-grlist-expunge)
+     ("q"   . e2wm:pst-window-select-main-command)
+     ("g"   . e2wm:def-plugin-R-grlist-update)
      )))
 
 (define-derived-mode
@@ -666,9 +663,7 @@ With prefix arg don't preserve the aspect ratio."
                     " " mode-line-position "-%-")))))
     (unless e2wm:def-plugin-R-grlist-timer-handle
       (setq e2wm:def-plugin-R-grlist-timer-handle
-            (run-at-time
-             6
-             6
+            (run-at-time 6 6
              'e2wm:def-plugin-R-grlist-timer)))
     (wlf:set-buffer wm (wlf:window-name winfo) buf)))
 
