@@ -2,11 +2,11 @@
 
 ;; Author: myuhe
 ;; URL: 
-;; Version: 0.3
+;; Version: 0.4
 ;; Created: 2011-03-15
 ;; Keywords:  window manager, convenience, e2wm
 ;; Package-Requires: ((e2wm "1.2"))
-;; Copyright (C) 2011 myuhe
+;; Copyright (C) 2011,2012 myuhe
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -32,6 +32,9 @@
 ;;             new command: e2wm:dp-R-popup-obj    
 ;;  2011-08-15 bug fix
 ;;  2011-10-24 bug fix: exclude duplicate timer
+;;  2012-03-01 new command
+;;               e2wm:dp-R-image-dired: open thumbnail using image-dired
+;;               e2wm:dp-R-popup-obj:   popup rawdata of dataframe
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;require
@@ -41,6 +44,7 @@
 (require'ess-site)
 (require 'e2wm)
 (require 'inlineR)
+(require 'image-dired nil t)
 (load "ess-rdired")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -63,21 +67,6 @@
                R-dired
                imenu))
          sub)))
-
-;; (defvar e2wm:c-R-code-recipe
-;;   '(| (:left-max-size 25)
-;;       (- (:upper-size-ratio 0.5)
-;;          imenu
-;;          history)
-;;       (- (:upper-size-ratio 0.7)
-;;          (| (:right-max-size 35)
-;;             (- (:upper-size-ratio 0.7)
-;;                main proc)
-;;             (- (:upper-size-ratio 0.3)
-;;                R-dired
-;;                (- (:lower-max-size 35)
-;;                 R-graphics-list R-graphics)))
-;;          sub)))
 
 (defvar e2wm:c-R-code-winfo
   '((:name main)
@@ -126,7 +115,8 @@
      ("prefix G" . e2wm:def-plugin-R-graphics-draw)
      ("prefix m" . e2wm:dp-code-main-maximize-toggle-command)
      ("C-c m" . e2wm:dp-code-popup-messages)
-     ("C-c v" . e2wm:dp-R-popup-obj))
+     ("C-c v" . e2wm:dp-R-popup-obj)
+     ("C-c i" . e2wm:dp-R-image-dired))
    e2wm:prefix-key))
 
 ;;; commands / R-code
@@ -140,6 +130,46 @@
   (let ((objname (current-word)))
         (ess-execute (ess-rdired-get objname) nil "R object")
         (select-window (wlf:get-window (e2wm:pst-get-wm) 'sub))))
+
+;;borrowed from image-dired.el
+(defun e2wm:dp-R-image-dired ()
+  (interactive)
+(let ((buf 
+  (dired (e2wm:def-plugin-R-graphics-fix-directory
+          e2wm:def-plugin-R-graphics-dir))))
+  (dired-mark-files-regexp (image-file-name-regexp))
+  (let ((files (dired-get-marked-files)))
+    (if (or (<= (length files) image-dired-show-all-from-dir-max-files)
+            (and (> (length files) image-dired-show-all-from-dir-max-files)
+                 (y-or-n-p
+                  (format
+                   "Directory contains more than %d image files.  Proceed? "
+                   image-dired-show-all-from-dir-max-files))))
+        (progn
+          (image-dired-display-thumbs)
+          (e2wm:pst-buffer-set 'proc buf t)
+          (pop-to-buffer image-dired-thumbnail-buffer)
+          ;;(e2wm:pst-buffer-set 'proc (get-buffer-create image-dired-thumbnail-buffer) t)
+          (image-dired-thumbnail-overriding-minor-mode))
+      (message "Cancelled.")))))
+
+(defun e2wm:dp-R-kill-buffer-and-window ()
+  "Kill the current buffer and, if possible, also the window."
+  (interactive)
+  (let ((buffer (current-buffer)))
+    (condition-case nil
+        (delete-window (selected-window))
+      (error nil))
+    (kill-buffer buffer)
+      (e2wm:pst-buffer-set 'proc (get-buffer-create "*R*") t)
+      (e2wm:pst-show-history-main)
+      (e2wm:pst-window-select-main)))
+
+(define-minor-mode image-dired-thumbnail-overriding-minor-mode
+  "overriding image-dired-thumbnail-mode"             
+  nil                                     
+  "hogehoge"                                    
+  `((,(kbd "q") . e2wm:dp-R-kill-buffer-and-window)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;perspective definition : R-view / R graphics view
@@ -205,7 +235,8 @@
      ("prefix G" . e2wm:def-plugin-R-graphics-draw)
      ("prefix m" . e2wm:dp-code-main-maximize-toggle-command)
      ("C-c m"    . e2wm:dp-code-popup-messages)
-     ("C-c v"    . e2wm:dp-R-popup-obj))
+     ("C-c v"    . e2wm:dp-R-popup-obj)
+     ("C-c i" . e2wm:dp-R-image-dired))
    e2wm:prefix-key))
 
 (defun e2wm:dp-R-view ()
@@ -263,27 +294,26 @@ e2wmをRで開始する。"
       t)
      ((string= "*R*" buf-name)
       (wlf:set-buffer (e2wm:pst-get-wm) 'proc buf)
-      ;;(e2wm:pst-buffer-set 'main buf t)
       t)
-     ((string-match "^*help" buf-name)
+     ((string-match (or "*R object*" "^*help") buf-name)
       (e2wm:dp-code-popup-sub buf)
-      ;; (other-window)
       (e2wm:start-close-popup-window-timer)
       t)
      ((string-match "\\.rt$" buf-name)
       (e2wm:dp-code-popup-sub buf)
-      ;; (other-window)
-      (e2wm:start-close-popup-window-timer)
-      (select-window (wlf:get-window (e2wm:pst-get-wm) 'sub))
-      t)
-     ((string-match "*R object*" buf-name)
-      (e2wm:dp-code-popup-sub buf)
-      ;; (other-window)
       (e2wm:start-close-popup-window-timer)
       (select-window (wlf:get-window (e2wm:pst-get-wm) 'sub))
       t)
      ((and e2wm:c-code-show-main-regexp
-           (string-match e2wm:c-code-show-main-regexp buf-name))
+           (string-match  
+            e2wm:c-code-show-main-regexp
+            buf-name))
+      (e2wm:pst-buffer-set 'main buf t)
+      t)
+     ((and image-dired-display-image-buffer
+           (string-match  
+            image-dired-display-image-buffer 
+            buf-name))
       (e2wm:pst-buffer-set 'main buf t)
       t)
      (t
