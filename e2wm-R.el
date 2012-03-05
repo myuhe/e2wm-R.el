@@ -882,6 +882,51 @@ Japanese:
                       'e2wm:def-plugin-R-open)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;plugin definition / R-thumbs plugin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun e2wm:def-plugin-R-thumbs (frame wm winfo)
+(let ((buf 
+  (dired (e2wm:def-plugin-R-graphics-fix-directory
+          e2wm:def-plugin-R-graphics-dir))))
+  (dired-mark-files-regexp (image-file-name-regexp))
+  (let ((files (dired-get-marked-files)))
+    (if (or (<= (length files) image-dired-show-all-from-dir-max-files)
+            (and (> (length files) image-dired-show-all-from-dir-max-files)
+                 (y-or-n-p
+                  (format
+                   "Directory contains more than %d image files.  Proceed? "
+                   image-dired-show-all-from-dir-max-files))))
+        (progn
+          (image-dired-display-thumbs)
+          (wlf:set-buffer wm
+                          (wlf:window-name winfo)
+                          (get-buffer-create image-dired-thumbnail-buffer)))
+      (message "Cancelled.")))))
+
+(e2wm:plugin-register 'R-thumbs
+                     "Draw R graphics thumbnail"
+                     'e2wm:def-plugin-R-thumbs)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;plugin definition / R-thumbs-view plugin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun e2wm:def-plugin-R-thumbs-view (frame wm winfo)
+          (wlf:set-buffer wm
+                          (wlf:window-name winfo) 
+                          (get-buffer-create image-dired-display-image-buffer)))
+
+(defun e2wm:dp-R-thumbs-revert ()
+  (interactive)
+  (e2wm:pst-change-prev)
+  (wlf:set-buffer (e2wm:pst-get-wm) 'main (e2wm:history-get-main-buffer)))
+
+(e2wm:plugin-register 'R-thumbs-view
+                     "Draw R graphics"
+                     'e2wm:def-plugin-R-thumbs-view)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;Internal / popup
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
