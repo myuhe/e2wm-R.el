@@ -48,7 +48,8 @@
 (require'ess-site)
 (require 'e2wm)
 (require 'inlineR)
-(require 'image-dired nil t)
+(require 'image-dired)
+(require 'imgur nil t)
 (load "ess-rdired")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
