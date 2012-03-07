@@ -35,6 +35,9 @@
 ;;  2012-03-01 new command
 ;;               e2wm:dp-R-image-dired: open thumbnail using image-dired
 ;;               e2wm:dp-R-popup-obj:   popup rawdata of dataframe
+;;  2012-03-01 new perspective
+;;               e2wm:dp-R-image-dired: open thumbnail using image-dired
+;;               e2wm:dp-R-popup-obj:   popup rawdata of dataframe
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;require
@@ -116,7 +119,12 @@
      ("prefix m" . e2wm:dp-code-main-maximize-toggle-command)
      ("C-c m" . e2wm:dp-code-popup-messages)
      ("C-c v" . e2wm:dp-R-popup-obj)
-     ("C-c i" . e2wm:dp-R-image-dired))
+     ("prefix p"    . e2wm:dp-code-popup-messages)
+     ("prefix v"    . e2wm:dp-R-popup-obj)
+     ("prefix t"    . e2wm:dp-R-thumbs)
+     ("C-c    p"    . e2wm:dp-code-popup-messages)
+     ("C-c    v"    . e2wm:dp-R-popup-obj)
+     ("C-c    t"    . e2wm:dp-R-thumbs))
    e2wm:prefix-key))
 
 ;;; commands / R-code
@@ -130,28 +138,6 @@
   (let ((objname (current-word)))
         (ess-execute (ess-rdired-get objname) nil "R object")
         (select-window (wlf:get-window (e2wm:pst-get-wm) 'sub))))
-
-;;borrowed from image-dired.el
-(defun e2wm:dp-R-image-dired ()
-  (interactive)
-(let ((buf 
-  (dired (e2wm:def-plugin-R-graphics-fix-directory
-          e2wm:def-plugin-R-graphics-dir))))
-  (dired-mark-files-regexp (image-file-name-regexp))
-  (let ((files (dired-get-marked-files)))
-    (if (or (<= (length files) image-dired-show-all-from-dir-max-files)
-            (and (> (length files) image-dired-show-all-from-dir-max-files)
-                 (y-or-n-p
-                  (format
-                   "Directory contains more than %d image files.  Proceed? "
-                   image-dired-show-all-from-dir-max-files))))
-        (progn
-          (image-dired-display-thumbs)
-          (e2wm:pst-buffer-set 'proc buf t)
-          (pop-to-buffer image-dired-thumbnail-buffer)
-          ;;(e2wm:pst-buffer-set 'proc (get-buffer-create image-dired-thumbnail-buffer) t)
-          (image-dired-thumbnail-overriding-minor-mode))
-      (message "Cancelled.")))))
 
 (defun e2wm:dp-R-kill-buffer-and-window ()
   "Kill the current buffer and, if possible, also the window."
@@ -170,6 +156,7 @@
   nil                                     
   "hogehoge"                                    
   `((,(kbd "q") . e2wm:dp-R-kill-buffer-and-window)))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;perspective definition : R-view / R graphics view
@@ -234,14 +221,73 @@
      ("prefix g" . e2wm:def-plugin-R-graphics-timestamp-draw)
      ("prefix G" . e2wm:def-plugin-R-graphics-draw)
      ("prefix m" . e2wm:dp-code-main-maximize-toggle-command)
-     ("C-c m"    . e2wm:dp-code-popup-messages)
-     ("C-c v"    . e2wm:dp-R-popup-obj)
-     ("C-c i" . e2wm:dp-R-image-dired))
-   e2wm:prefix-key))
+     ("prefix p"    . e2wm:dp-code-popup-messages)
+     ("prefix v"    . e2wm:dp-R-popup-obj)
+     ("prefix t"    . e2wm:dp-R-thumbs)
+     ("C-c    p"    . e2wm:dp-code-popup-messages)
+     ("C-c    v"    . e2wm:dp-R-popup-obj)
+     ("C-c    t"    . e2wm:dp-R-thumbs))
+     e2wm:prefix-key))
 
 (defun e2wm:dp-R-view ()
   (interactive)
   (e2wm:pst-change 'R-view))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;perspective definition : R-thumbs / thumbnail R graphics 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar e2wm:c-R-thumbs-recipe
+  '(| (:left-size-ratio 0.6)
+      R-thumbs-view
+      (- (:upper-size-ratio 0.7)
+            main
+            sub)))
+
+(defvar e2wm:c-R-thumbs-winfo
+  '((:name main :plugin R-thumbs)
+    (:name R-thumbs-view :plugin R-thumbs-view)
+    (:name sub :buffer "*info*" :default-hide t)))
+
+;; (defvar e2wm:c-R-thumbs-winfo
+;;   '((:name main :plugin R-thumbs-view)
+;;     (:name R-thumbs-view :plugin R-thumbs)
+;;     (:name sub :buffer "*info*" :default-hide t)))
+
+(e2wm:pst-class-register
+ (make-e2wm:$pst-class
+  :name   'R-thumbs
+  :title  "R-graphics-view"
+  :init   'e2wm:dp-R-thumbs-init
+  :main   'main
+  :switch 'e2wm:dp-code-switch
+  :popup  'e2wm:dp-R-code-popup
+  :keymap 'e2wm:dp-R-thumbs-minor-mode-map))
+
+(defun e2wm:dp-R-thumbs-init ()
+  (let* 
+      ((code-wm 
+        (wlf:no-layout 
+         e2wm:c-R-thumbs-recipe
+         e2wm:c-R-thumbs-winfo))
+       (buf (or prev-selected-buffer
+                (e2wm:history-get-main-buffer))))
+    (when (e2wm:history-recordable-p prev-selected-buffer)
+      (e2wm:history-add prev-selected-buffer))
+    (wlf:set-buffer code-wm 'main buf)
+    code-wm))
+
+(defvar e2wm:dp-R-thumbs-minor-mode-map
+  (e2wm:define-keymap
+   '(
+     ("prefix p" . e2wm:dp-code-popup-messages)
+     ("C-c    p" . e2wm:dp-code-popup-messages)
+     ("q"  . e2wm:dp-R-thumbs-revert))
+   e2wm:prefix-key))
+
+(defun e2wm:dp-R-thumbs ()
+  (interactive)
+  (e2wm:pst-change 'R-thumbs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;perspective definition : Common Commands
@@ -314,8 +360,9 @@ e2wmをRで開始する。"
            (string-match  
             image-dired-display-image-buffer 
             buf-name))
-      (e2wm:pst-buffer-set 'main buf t)
+      (e2wm:pst-buffer-set 'R-thumbs-view buf t)
       t)
+
      (t
       (e2wm:dp-code-popup-sub buf)
       t))))
@@ -734,8 +781,7 @@ With prefix arg don't preserve the aspect ratio."
                   (insert (concat "  " i "\n"))))
               (backward-char 1))
               (setq buffer-read-only t))))
-      (setq e2wm:R-grlist-tmp-list flist)
-      )))
+      (setq e2wm:R-grlist-tmp-list flist))))
 
 (defun e2wm:def-plugin-R-grlist-view ()
   (interactive)
