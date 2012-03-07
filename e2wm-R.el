@@ -38,6 +38,7 @@
 ;;  2012-03-01 new perspective
 ;;               e2wm:dp-R-image-dired: open thumbnail using image-dired
 ;;               e2wm:dp-R-popup-obj:   popup rawdata of dataframe
+;;  2012-03-01 new plugin R-thumbs-dired
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;require
@@ -239,14 +240,17 @@
 
 (defvar e2wm:c-R-thumbs-recipe
   '(| (:left-size-ratio 0.6)
-      R-thumbs-view
       (- (:upper-size-ratio 0.7)
-            main
-            sub)))
+         R-thumbs-view
+         R-thumbs-dired)
+      (- (:upper-size-ratio 0.7)
+         main
+         sub)))
 
 (defvar e2wm:c-R-thumbs-winfo
   '((:name main :plugin R-thumbs)
     (:name R-thumbs-view :plugin R-thumbs-view)
+    (:name R-thumbs-dired :plugin R-thumbs-dired)
     (:name sub :buffer "*info*" :default-hide t)))
 
 ;; (defvar e2wm:c-R-thumbs-winfo
@@ -971,6 +975,19 @@ Japanese:
 (e2wm:plugin-register 'R-thumbs-view
                      "Draw R graphics"
                      'e2wm:def-plugin-R-thumbs-view)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;plugin definition / R-thumbs-dired plugin
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun e2wm:def-plugin-R-thumbs-dired (frame wm winfo) 
+  (let ((dbuf (dired-noselect default-directory)))
+    (with-current-buffer dbuf (revert-buffer))
+    (wlf:set-buffer wm (wlf:window-name winfo) dbuf)))
+
+(e2wm:plugin-register 'R-thumbs-dired
+                      "Graphics directory"
+                      'e2wm:def-plugin-R-thumbs-dired)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;Internal / popup
