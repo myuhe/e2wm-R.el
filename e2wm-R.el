@@ -39,6 +39,7 @@
 ;;               e2wm:dp-R-image-dired: open thumbnail using image-dired
 ;;               e2wm:dp-R-popup-obj:   popup rawdata of dataframe
 ;;  2012-03-06 new plugin: R-thumbs-dired
+;;  2012-03-08 release v0.4
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;require
