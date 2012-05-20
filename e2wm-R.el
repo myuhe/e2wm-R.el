@@ -40,6 +40,7 @@
 ;;               e2wm:dp-R-popup-obj:   popup rawdata of dataframe
 ;;  2012-03-06 new plugin: R-thumbs-dired
 ;;  2012-03-08 release v0.4
+;;  2012-05-20 bug fix for R2.15.0
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;require
@@ -88,6 +89,7 @@
 (e2wm:pst-class-register 
  (make-e2wm:$pst-class
   :name   'R-code
+  :extend 'base
   :title  "R-Coding"
   :init   'e2wm:dp-R-code-init
   :main   'main
@@ -184,6 +186,7 @@
 (e2wm:pst-class-register
  (make-e2wm:$pst-class
   :name   'R-view
+  :extend 'base
   :title  "R-graphics-view"
   :init   'e2wm:dp-R-view-init
   :main   'main
@@ -249,6 +252,7 @@
 (e2wm:pst-class-register
  (make-e2wm:$pst-class
   :name   'R-thumbs
+  :extend 'base
   :title  "R-graphics-view"
   :init   'e2wm:dp-R-thumbs-init
   :main   'main
@@ -428,14 +432,6 @@ e2wmをRで開始する。"
         (when buf (kill-buffer buf))
         (e2wm:message "WM: 'R-dired' update timer stopped.")))))
 
-(defun e2wm:def-plugin-R-dired-mode ()
-  (kill-all-local-variables)
-  (make-local-variable 'revert-buffer-function)
-  (setq revert-buffer-function 'e2wm:def-plugin-R-revert-buffer)
-  (use-local-map e2wm:def-plugin-R-dired-mode-map)
-  (setq major-mode 'e2wm:def-plugin-R-dired-mode)
-  (setq mode-name (concat "RDired " ess-local-process-name)))
-
 (defvar e2wm:def-plugin-R-dired-mode-map
   (e2wm:define-keymap 
    '(("d"   . ess-rdired-delete)
@@ -453,6 +449,14 @@ e2wmをRで開始する。"
      ("C-p" . ess-rdired-previous-line)    
      ("g"   . revert-buffer)
      ("q"   . e2wm:pst-window-select-main-command))))
+
+(defun e2wm:def-plugin-R-dired-mode ()
+  (kill-all-local-variables)
+  (make-local-variable 'revert-buffer-function)
+  (setq revert-buffer-function 'e2wm:def-plugin-R-revert-buffer)
+  (use-local-map e2wm:def-plugin-R-dired-mode-map)
+  (setq major-mode 'e2wm:def-plugin-R-dired-mode)
+  (setq mode-name (concat "RDired " ess-local-process-name)))
 
 (defun e2wm:def-plugin-R-dired-view ()
   "View the object at point."
@@ -593,24 +597,28 @@ Arguments IGNORE and NOCONFIRM currently not used."
     (e2wm:def-plugin-R-graphics-polling file filename format)))
 
 (defun e2wm:def-plugin-R-graphics-execute (file format fun)
-  (if inlineR-cairo-p
-      (cond
+  (cond
        ((string= format "svg")  
         (ess-command 
          (concat 
-          "CairoSVG(\"" file "\", 3, 3)\n"
+          "svg(\""  file "." format "\", 3, 3)\n"
           fun "\n"
           "dev.off()\n")))
+       ((string= format "png") (ess-command
+           (concat
+            "png(width = 800, height = 800, \"" file  "\", type=\"" "cairo" "\", bg =\"white\" )\n"
+            fun "\n"
+            "dev.off()\n")))
+       ((string= format "jpeg") (ess-command
+           (concat
+            "jpeg(width = 800, height = 800, \""  file  "\", type=\"" "cairo" "\", bg =\"white\" )\n"
+            fun "\n"
+            "dev.off()\n")))
        (t (ess-command
            (concat
-            "Cairo(600, 600, \"" file "\", type=\"" format "\", bg =\"white\" )\n"
+            "Cairo(800, 800, \"" file "." format "\", type=\"" "cairo" "\", bg =\"white\" )\n"
             fun "\n"
-            "dev.off()\n"))))
-    (ess-command
-     (concat
-      format "(\"" file "\")\n"
-      fun "\n"
-      "dev.off()\n"))))
+            "dev.off()\n")))))
 
 (lexical-let ((count 0))
   (defun e2wm:def-plugin-R-graphics-polling (file filename format)
