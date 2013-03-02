@@ -2,7 +2,7 @@
 
 ;; Author: myuhe <yuhei.maeda_at_gmail.com>
 ;; Maintainer: myuhe
-;; URL: 
+;; URL: https://github.com/myuhe/e2wm-R.el
 ;; Version: 0.4
 ;; Created: 2011-03-15
 ;; Keywords: convenience, e2wm
