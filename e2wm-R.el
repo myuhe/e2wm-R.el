@@ -629,11 +629,19 @@ Arguments IGNORE and NOCONFIRM currently not used."
           ;;(message "file type check complete!!")
           (e2wm:def-plugin-R-graphics-img-fit file filename format t))
       (progn
-        (setq count (1+ count))
-        (message (concat "output image." (make-string count ?.)))    
-        ;;(message "number %d" count)
-        (run-at-time 1 nil
-                     'e2wm:def-plugin-R-graphics-polling file filename format)))))
+        (if   (> count 11)
+            (progn
+              (setq count 0)
+              ;;(message "file type check complete!!")
+              (e2wm:def-plugin-R-graphics-img-fit file filename format t)
+              (cancel-timer e2wm:def-plugin-R-graphics-timer))
+          (progn
+            (setq count (1+ count))
+            (message (concat "output image." (make-string count ?.)))    
+            ;;(message "number %d" count)
+            (setq e2wm:def-plugin-R-graphics-timer
+                  (run-at-time 1 nil
+                               'e2wm:def-plugin-R-graphics-polling file filename format))))))))
 
 
 (defun e2wm:def-plugin-R-graphics-img-fit (file filename format &optional arg quiet)
