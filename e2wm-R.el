@@ -1,11 +1,12 @@
 ;;; e2wm-R.el --- some e2wm plugin and perspective for GNU R
 
-;; Author: myuhe
+;; Author: myuhe <yuhei.maeda_at_gmail.com>
+;; Maintainer: myuhe
 ;; URL: 
 ;; Version: 0.4
 ;; Created: 2011-03-15
-;; Keywords:  window manager, convenience, e2wm
-;; Package-Requires: ((e2wm "1.2"))
+;; Keywords: convenience, e2wm
+;; Package-Requires: ((e2wm "20130225.1602") (inlineR "20120520.2332") (ess "20130225.1754"))
 ;; Copyright (C) 2011,2012 myuhe
 
 ;; This program is free software; you can redistribute it and/or modify
