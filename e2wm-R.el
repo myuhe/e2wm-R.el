@@ -511,8 +511,9 @@ Arguments IGNORE and NOCONFIRM currently not used."
         (buff-name e2wm:rdired-tmp-buffer))
     (let ((buff (ess-create-temp-buffer buff-name)))
       (save-excursion
-        (set-buffer buff)
+        (set-buffer (window-buffer (wlf:get-window (e2wm:pst-get-wm) 'main)))
         (ess-command the-command (get-buffer buff-name))
+        (set-buffer buff)
         (goto-char (point-min))
         (delete-char (* (1- (length (split-string ess-rdired-objects "\n"))) 2))
         (setq e2wm:rdired-tmp-str (buffer-string))
