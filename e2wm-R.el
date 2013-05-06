@@ -1015,25 +1015,28 @@ Japanese:
 FORCE is non-nil, this function tries to close the popup window
 immediately if possible, and the lastly selected window will be
 selected again."
-  (when (wlf:get-window (e2wm:pst-get-wm) 'sub)
-    (let* ((window (selected-window))
-           (minibuf-window-p (eq window (minibuffer-window)))
-           (other-window-selected
-            (and (not (eq window (wlf:get-window (e2wm:pst-get-wm) 'sub)))
-                 (not (eq window (wlf:get-window (e2wm:pst-get-wm) 'main))))))
-      (when (and (not minibuf-window-p)
-                 (or force other-window-selected))
-        (wlf:hide (e2wm:pst-get-wm) 'sub)
-        (e2wm:pst-window-select-main-command)
-        (e2wm:stop-close-popup-window-timer)))))
+  (when e2wm:pst-minor-mode
+    (when (wlf:get-window (e2wm:pst-get-wm) 'sub)
+      (let* ((window (selected-window))
+             (minibuf-window-p (eq window (minibuffer-window)))
+             (other-window-selected
+              (and (not (eq window (wlf:get-window (e2wm:pst-get-wm) 'sub)))
+                   (not (eq window (wlf:get-window (e2wm:pst-get-wm) 'main))))))
+        (when (and (not minibuf-window-p)
+                   (or force other-window-selected))
+          (wlf:hide (e2wm:pst-get-wm) 'sub)
+          (e2wm:pst-window-select-main-command)
+          (e2wm:stop-close-popup-window-timer))))))
 
 (defun e2wm:should-close-popup-window-p ()
   "Return t if popwin should close the popup window
 immediately. It might be useful if this is customizable
 function."
-  (and (wlf:get-window (e2wm:pst-get-wm) 'sub)
-       (and (eq last-command 'keyboard-quit)
-            (eq last-command-event ?\C-g))))
+  (if e2wm:pst-minor-mode
+      (and (wlf:get-window (e2wm:pst-get-wm) 'sub)
+           (and (eq last-command 'keyboard-quit)
+                (eq last-command-event ?\C-g)))
+    nil))
 
 (defun e2wm:stop-close-popup-window-timer ()
   (when e2wm:close-popup-window-timer
