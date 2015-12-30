@@ -6,7 +6,7 @@
 ;; Version: 0.4
 ;; Created: 2011-03-15
 ;; Keywords: convenience, e2wm
-;; Package-Requires: ((e2wm "20130225.1602") (inlineR "20120520.2332") (ess "20130225.1754"))
+;; Package-Requires: ((e2wm "1.3") (inlineR "1.0") (ess "15.3"))
 ;; Copyright (C) 2011,2012 myuhe
 
 ;; This program is free software; you can redistribute it and/or modify
